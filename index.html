@@ -1,22 +1,108 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Passport Photo Grid</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" integrity="sha512-cyzxRvewl+FOKTtpBzYjW6x6IAYUCZy3sGP40hn+DQkqeluGRCax7qztK2ImL64SA+C7kVWdLI6wvdlStawhyw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        canvas {
+            max-width: 90%;
+            max-height: 20vh;
+            height: auto;
+            border: 1px solid #000;
+        }
+        img {
+            max-width: 90%;
+            max-height: 20vh;
+            height: auto;
+            border: 1px solid #000;
+        }
+        
+        .file-upload {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .file-upload:hover {
+            background-color: #45a049;
+        }
+        
+        .image-container {
+            max-width: 90%;
+            max-height: 20vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid #000;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
 <body>
 
-<h2>Passport Photo Generator</h2>
+<h2>Passport Photo Grid</h2>
 
-<input type="file" id="upload" accept="image/*" />
-<br />
-<canvas id="canvas1" width="1200" height="1800" style="border:1px solid #000000;"></canvas> <!-- 4x6 inch in 300 DPI -->
+<input type="file" id="upload" accept="image/*" style="display: none" />
+<label for="upload" class="file-upload">Choose File</label>
+
 <br />
 <button onclick="download('canvas1', 'passport_photo_4x6.jpg')">Download 4x6 Image</button>
-<br />
-<canvas id="canvas2" width="1800" height="1200" style="border:1px solid #000000;"></canvas> <!-- 6x4 inch in 300 DPI -->
-<br />
 <button onclick="download('canvas2', 'passport_photo_6x4.jpg')">Download 6x4 Image</button>
+<br />
+<div class="image-container">
+    <img id="image" style="display:none;">
+</div>
+<br />
+<canvas id="canvas2" width="3600" height="2400"></canvas> <!-- 12x8 inch in 300 DPI -->
+<br />
+<canvas id="canvas1" width="2400" height="3600"></canvas> <!-- 8x12 inch in 300 DPI -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" integrity="sha512-6lplKUSl86rUVprDIjiW8DuOniNX8UDoRATqZSds/7t6zCQZfaCe3e5zcGaQwxa8Kpn5RTM9Fvl3X2lLV4grPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
 var img = new Image();
 var input = document.getElementById('upload');
+var imageElement = document.getElementById('image');
+var cropper;
+
 input.addEventListener('change', previewImage);
 
 function previewImage() {
@@ -24,17 +110,43 @@ function previewImage() {
     var reader = new FileReader();
 
     reader.addEventListener("load", function () {
-        img.src = reader.result;
-        img.onload = function() {
-            draw('canvas1', 1200, 1800, 2, 3);
-            draw('canvas2', 1800, 1200, 3, 2);
-        };
+        imageElement.src = reader.result;
+        imageElement.style.display = 'inline-block';
+        setupCropper();
     }, false);
 
     if (file) {
         reader.readAsDataURL(file);
     }
 }
+
+function setupCropper() {
+    if (cropper) {
+        cropper.destroy();
+    }
+
+    let debounceTimeout;
+    cropper = new Cropper(imageElement, {
+        aspectRatio: 1,
+        crop: function(event) {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                img = new Image();
+                img.src = cropper.getCroppedCanvas().toDataURL('image/png');
+                img.onload = function() {
+                    draw('canvas1', 2400, 3600, 2, 3);
+                    draw('canvas2', 3600, 2400, 3, 2);
+                };
+            }, 500); // delay of 500 ms
+        },
+        modal: true,
+        guides: false,
+        highlight: false,
+        autoCropArea: 1.0,
+        viewMode: 1,
+    });
+}
+
 
 function draw(canvasId, canvasWidth, canvasHeight, cols, rows) {
     var canvas = document.getElementById(canvasId);
@@ -58,7 +170,7 @@ function draw(canvasId, canvasWidth, canvasHeight, cols, rows) {
 function download(canvasId, filename) {
     var canvas = document.getElementById(canvasId);
     var downloadLink = document.createElement('a');
-    downloadLink.href = canvas.toDataURL('image/jpeg');
+    downloadLink.href = canvas.toDataURL('image/jpeg', 1.0);
     downloadLink.download = filename;
     downloadLink.click();
 }
