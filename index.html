@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Passport Photo Generator</h2>
+
+<input type="file" id="upload" accept="image/*" />
+<br />
+<canvas id="canvas1" width="1200" height="1800" style="border:1px solid #000000;"></canvas> <!-- 4x6 inch in 300 DPI -->
+<br />
+<button onclick="download('canvas1', 'passport_photo_4x6.jpg')">Download 4x6 Image</button>
+<br />
+<canvas id="canvas2" width="1800" height="1200" style="border:1px solid #000000;"></canvas> <!-- 6x4 inch in 300 DPI -->
+<br />
+<button onclick="download('canvas2', 'passport_photo_6x4.jpg')">Download 6x4 Image</button>
+
+<script>
+var img = new Image();
+var input = document.getElementById('upload');
+input.addEventListener('change', previewImage);
+
+function previewImage() {
+    var file = input.files[0];
+    var reader = new FileReader();
+
+    reader.addEventListener("load", function () {
+        img.src = reader.result;
+        img.onload = function() {
+            draw('canvas1', 1200, 1800, 2, 3);
+            draw('canvas2', 1800, 1200, 3, 2);
+        };
+    }, false);
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
+
+function draw(canvasId, canvasWidth, canvasHeight, cols, rows) {
+    var canvas = document.getElementById(canvasId);
+    var ctx = canvas.getContext('2d');
+
+    // Set white background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Draw 6 images
+    var imgWidth = canvasWidth / cols;
+    var imgHeight = canvasHeight / rows;
+    
+    for (var i = 0; i < rows; i++) {
+        for (var j = 0; j < cols; j++) {
+            ctx.drawImage(img, j*imgWidth, i*imgHeight, imgWidth, imgHeight);
+        }
+    }
+}
+
+function download(canvasId, filename) {
+    var canvas = document.getElementById(canvasId);
+    var downloadLink = document.createElement('a');
+    downloadLink.href = canvas.toDataURL('image/jpeg');
+    downloadLink.download = filename;
+    downloadLink.click();
+}
+</script>
+
+</body>
+</html>
